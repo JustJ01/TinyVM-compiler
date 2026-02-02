@@ -25,9 +25,7 @@ pub enum Token {
     RParen,
     Colon,
 
-    // Newlines / structure
+    // Newlines
     Newline,
-    Indent,
-    Dedent,
     Eof,
 }

@@ -1,9 +1,12 @@
+mod ast;
 mod lexer;
+mod parser;
 mod token;
 
 use lexer::Lexer;
-use token::Token;
+use parser::Parser;
 use std::{env, fs};
+use token::Token;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -15,17 +18,25 @@ fn main() {
 
     let file_path = &args[1];
 
-    let source = fs::read_to_string(file_path)
-        .expect("Failed to read source file");
+    let source = fs::read_to_string(file_path).expect("Failed to read source file");
 
     let mut lexer = Lexer::new(&source);
 
+    let mut tokens: Vec<Token> = Vec::new();
+
     loop {
         let token = lexer.next_token();
-        println!("{:?}", token);
+        tokens.push(token);
 
-        if token == Token::Eof {
+        if tokens[tokens.len() - 1] == Token::Eof {
             break;
         }
     }
+
+    println!("Tokens: {:#?}", tokens);
+
+    let mut parser = Parser::new(tokens);
+    let parsed_program = parser.parse_program();
+
+    println!("Parsed program: {:#?}", parsed_program);
 }
