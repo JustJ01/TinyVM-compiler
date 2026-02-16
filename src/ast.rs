@@ -14,6 +14,12 @@ pub enum Stmt {
     Print(Expr),
     Assign { name: String, value: Expr },
     While { condition: Expr, body: Vec<Stmt> },
+    If {
+        condition: Expr,
+        then_body: Vec<Stmt>,
+        else_body: Vec<Stmt>,
+    },
+
 }
 
 #[derive(Debug)]
@@ -25,4 +31,6 @@ pub enum BinOp {
     Lt,
     Gt,
     EqEq,
+    Le,
+    Ge,
 }

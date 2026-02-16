@@ -65,7 +65,20 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
             for stmt in body {
                 visit_stmt(stmt, table);
             }
+        },
+
+        Stmt::If { condition, then_body, else_body } => {
+            visit_expr(condition, table);
+
+            for stmt in then_body {
+                visit_stmt(stmt, table);
+            }
+
+            for stmt in else_body {
+                visit_stmt(stmt, table);
+            }
         }
+
     }
 }
 

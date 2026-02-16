@@ -1,0 +1,19 @@
+x = 5
+if x <= 5:
+    print 1
+elseif x > 5:
+    print 0
+
+y = 10
+if y >= 10:
+    print 2
+else:
+    print 0
+
+z = 3
+if z <= 2:
+    print 3
+else:
+    print 4
+
+print 9

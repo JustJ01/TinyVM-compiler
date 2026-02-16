@@ -17,6 +17,7 @@ impl Parser {
         let mut stmts = Vec::new();
 
         while !matches!(self.peek(), Token::Eof) {
+            self.skip_newlines();
             if matches!(self.peek(), Token::Newline) {
                 self.advance();
                 continue;
@@ -28,11 +29,62 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> Stmt {
+        self.skip_newlines();
         match self.peek() {
             Token::While => self.parse_while(),
+            Token::If => self.parse_if(),
             Token::Print => self.parse_print(),
             Token::Ident(_) => self.parse_assign(),
             _ => panic!("Unexpected token: {:?}", self.peek()),
+        }
+    }
+
+    fn parse_if(&mut self) -> Stmt {
+        self.advance(); // IF
+
+        let condition = self.parse_expr();
+        self.expect(Token::Colon);
+        self.expect(Token::Newline);
+        self.expect(Token::Indent);
+
+        let mut then_body = Vec::new();
+
+        while !matches!(self.peek(), Token::Dedent | Token::Eof) {
+            then_body.push(self.parse_stmt());
+        }
+
+        self.expect(Token::Dedent);
+
+        let mut else_body = Vec::new();
+
+        if matches!(self.peek(), Token::ElseIf) {
+            else_body.push(self.parse_if()); // recursive elseif
+        }
+        else if matches!(self.peek(), Token::Else) {
+            self.advance();
+            self.expect(Token::Colon);
+            self.expect(Token::Newline);
+            self.expect(Token::Indent);
+
+            while !matches!(self.peek(), Token::Dedent | Token::Eof) {
+                else_body.push(self.parse_stmt());
+            }
+
+            self.expect(Token::Dedent);
+        }
+
+        Stmt::If {
+            condition,
+            then_body,
+            else_body,
+        }
+    }
+
+
+
+    fn skip_newlines(&mut self) {
+        while matches!(self.peek(), Token::Newline) {
+            self.advance();
         }
     }
 
@@ -58,18 +110,24 @@ impl Parser {
     }
 
     fn parse_while(&mut self) -> Stmt {
-        self.advance(); // while
+        self.advance();
+
         let condition = self.parse_expr();
         self.expect(Token::Colon);
         self.expect(Token::Newline);
+        self.expect(Token::Indent);
 
         let mut body = Vec::new();
-        while !matches!(self.peek(), Token::Eof | Token::While) {
+
+        while !matches!(self.peek(), Token::Dedent | Token::Eof) {
             body.push(self.parse_stmt());
         }
 
+        self.expect(Token::Dedent);
+
         Stmt::While { condition, body }
     }
+
 
     fn parse_expr(&mut self) -> Expr {
         self.parse_equality()
@@ -94,12 +152,15 @@ impl Parser {
     fn parse_comparison(&mut self) -> Expr {
         let mut expr = self.parse_term();
 
-        while matches!(self.peek(), Token::Lt | Token::Gt) {
+        while matches!(self.peek(), Token::Lt | Token::Gt | Token::Le | Token::Ge) {
             let op = match self.advance() {
                 Token::Lt => BinOp::Lt,
                 Token::Gt => BinOp::Gt,
+                Token::Le => BinOp::Le,
+                Token::Ge => BinOp::Ge,
                 _ => unreachable!(),
             };
+
             let right = self.parse_term();
             expr = Expr::Binary {
                 left: Box::new(expr),

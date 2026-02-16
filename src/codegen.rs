@@ -65,6 +65,44 @@ impl CodeGen {
                 let loop_end = self.code.len();
                 self.patch_u8(jmp_out_pos, loop_end);
             }
+
+            Stmt::If { condition, then_body, else_body } => {
+
+                // 1️⃣ Evaluate condition
+                self.gen_expr(condition, symbols);
+
+                // 2️⃣ Jump to ELSE if false
+                self.emit(0x41); // JMP_IF_FALSE
+                let else_jump_pos = self.code.len();
+                self.emit(0); // placeholder
+
+                // 3️⃣ THEN block
+                for stmt in then_body {
+                    self.gen_stmt(stmt, symbols);
+                }
+
+                // 4️⃣ Jump to END of THIS IF
+                self.emit(0x40); // JMP
+                let end_jump_pos = self.code.len();
+                self.emit(0); // placeholder
+
+                // 5️⃣ Patch ELSE target (start of else_body)
+                let else_start = self.code.len();
+                self.patch_u8(else_jump_pos, else_start);
+
+                // 6️⃣ Generate ELSE / ELSEIF body
+                for stmt in else_body {
+                    self.gen_stmt(stmt, symbols);
+                }
+
+                // 7️⃣ Patch END target (after entire IF)
+                let end = self.code.len();
+                self.patch_u8(end_jump_pos, end);
+            }
+
+
+
+
         }
     }
 
@@ -93,6 +131,8 @@ impl CodeGen {
                     BinOp::Lt => self.emit(0x31),
                     BinOp::Gt => self.emit(0x32),
                     BinOp::EqEq => self.emit(0x33),
+                    BinOp::Le => self.emit(0x34),
+                    BinOp::Ge => self.emit(0x35),
                 }
             }
         }

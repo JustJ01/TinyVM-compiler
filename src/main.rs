@@ -41,6 +41,8 @@ fn main() {
         }
     }
 
+    println!("{:#?}", tokens);
+
     let mut parser = Parser::new(tokens);
     let program = parser.parse_program();
 
@@ -73,6 +75,9 @@ fn main() {
             }
         }
     }
+
+    println!("{:#?}", program);
+
 
     println!("Bytecode written to test.by");
 

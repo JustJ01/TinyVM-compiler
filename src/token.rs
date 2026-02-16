@@ -17,6 +17,12 @@ pub enum Token {
     Lt,
     Gt,
     EqEq,
+    Le,
+    Ge,
+
+    If,
+    Else,
+    ElseIf,
 
     Assign, // =
 
@@ -24,6 +30,9 @@ pub enum Token {
     LParen,
     RParen,
     Colon,
+
+    Indent,
+    Dedent,
 
     // Newlines
     Newline,
