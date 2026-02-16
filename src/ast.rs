@@ -7,6 +7,11 @@ pub enum Expr {
         op: BinOp,
         right: Box<Expr>,
     },
+    Call {
+        name: String,
+        args: Vec<Expr>,
+    }
+
 }
 
 #[derive(Debug)]
@@ -19,6 +24,13 @@ pub enum Stmt {
         then_body: Vec<Stmt>,
         else_body: Vec<Stmt>,
     },
+    Func {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
+
+    Return(Expr),
 
 }
 

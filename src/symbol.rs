@@ -79,6 +79,22 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
             }
         }
 
+        Stmt::Func { params, body, .. } => {
+
+            // declare parameters as variables
+            for p in params {
+                table.declare(p);
+            }
+
+            for stmt in body {
+                visit_stmt(stmt, table);
+            }
+        }
+
+        Stmt::Return(expr) => {
+            visit_expr(expr, table);
+        }
+
     }
 }
 
@@ -93,6 +109,12 @@ fn visit_expr(expr: &Expr, table: &mut SymbolTable) {
         Expr::Binary { left, right, .. } => {
             visit_expr(left, table);
             visit_expr(right, table);
+        }
+
+        Expr::Call { args, .. } => {
+            for arg in args {
+                visit_expr(arg, table);
+            }
         }
     }
 }

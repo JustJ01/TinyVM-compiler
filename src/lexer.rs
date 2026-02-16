@@ -146,6 +146,7 @@ impl Lexer {
             Some('(') => { self.advance(); Token::LParen }
             Some(')') => { self.advance(); Token::RParen }
             Some(':') => { self.advance(); Token::Colon }
+            Some(',') => { self.advance(); Token::Comma}
 
             Some('=') => {
                 self.advance();
@@ -193,6 +194,8 @@ impl Lexer {
                     "if" => Token::If,
                     "else" => Token::Else,
                     "elseif" => Token::ElseIf,
+                    "func" => Token::Func,
+                    "return" => Token::Return,
                     _ => Token::Ident(ident),
                 }
             }

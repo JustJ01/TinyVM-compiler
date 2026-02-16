@@ -34,6 +34,10 @@ pub enum Token {
     Indent,
     Dedent,
 
+    Func,
+    Return,
+    Comma,
+
     // Newlines
     Newline,
     Eof,

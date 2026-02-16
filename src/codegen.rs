@@ -5,12 +5,19 @@ use crate::{
 
 pub struct CodeGen {
     pub code: Vec<u8>,
+    pub functions: std::collections::HashMap<String, usize>,
+    pub pending_calls: Vec<(usize, String)>,
 }
 
 impl CodeGen {
     pub fn new() -> Self {
-        Self { code: Vec::new() }
+        Self {
+            code: Vec::new(),
+            functions: std::collections::HashMap::new(),
+            pending_calls: Vec::new(),
+        }
     }
+
 
     fn emit(&mut self, byte: u8) {
         self.code.push(byte);
@@ -25,11 +32,31 @@ impl CodeGen {
     }
 
     pub fn generate(mut self, program: &[Stmt], symbols: &SymbolTable) -> Vec<u8> {
+
+        // compile main first, skip functions
         for stmt in program {
-            self.gen_stmt(stmt, symbols);
+            if !matches!(stmt, Stmt::Func { .. }) {
+                self.gen_stmt(stmt, symbols);
+            }
         }
 
-        self.emit(0xFF);
+        self.emit(0xFF); // HALT
+
+        // compile functions after main
+        for stmt in program {
+            if let Stmt::Func { name, .. } = stmt {
+                let addr = self.code.len();
+                self.functions.insert(name.clone(), addr);
+                self.gen_stmt(stmt, symbols);
+            }
+        }
+
+        // patch CALL targets
+        for (pos, name) in &self.pending_calls {
+            let addr = self.functions[name];
+            self.code[*pos] = addr as u8;
+        }
+
         self.code
     }
 
@@ -100,8 +127,29 @@ impl CodeGen {
                 self.patch_u8(end_jump_pos, end);
             }
 
+            Stmt::Func { name: _, params, body } => {
 
+                // parameters already on stack — store into memory slots
+                for (i, p) in params.iter().enumerate().rev() {
+                    let slot = symbols.lookup(p);
+                    self.emit(0x21);
+                    self.emit_u8(slot);
+                }
 
+                for stmt in body {
+                    self.gen_stmt(stmt, symbols);
+                }
+
+                // implicit return 0 if none
+                self.emit(0x01);
+                self.emit(0);
+                self.emit(0x61); // RET
+            }
+
+            Stmt::Return(expr) => {
+                self.gen_expr(expr, symbols);
+                self.emit(0x61); // RET
+            }
 
         }
     }
@@ -135,6 +183,19 @@ impl CodeGen {
                     BinOp::Ge => self.emit(0x35),
                 }
             }
+
+            Expr::Call { name, args } => {
+                for arg in args {
+                    self.gen_expr(arg, symbols);
+                }
+
+                self.emit(0x60); // CALL
+                let pos = self.code.len();
+                self.emit(0); // placeholder
+
+                self.pending_calls.push((pos, name.clone()));
+            }
+
         }
     }
 }

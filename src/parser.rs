@@ -35,9 +35,66 @@ impl Parser {
             Token::If => self.parse_if(),
             Token::Print => self.parse_print(),
             Token::Ident(_) => self.parse_assign(),
+            Token::Func => self.parse_func(),
+            Token::Return => self.parse_return(),
+
             _ => panic!("Unexpected token: {:?}", self.peek()),
         }
     }
+
+    fn parse_func(&mut self) -> Stmt {
+        self.advance(); // func
+
+        let name = if let Token::Ident(s) = self.advance() {
+            s.clone()
+        } else {
+            panic!("Expected function name");
+        };
+
+        self.expect(Token::LParen);
+
+        let mut params = Vec::new();
+
+        if !matches!(self.peek(), Token::RParen) {
+            loop {
+                if let Token::Ident(p) = self.advance() {
+                    params.push(p.clone());
+                } else {
+                    panic!("Expected parameter name");
+                }
+
+                if matches!(self.peek(), Token::Comma) {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        self.expect(Token::RParen);
+        self.expect(Token::Colon);
+        self.expect(Token::Newline);
+        self.expect(Token::Indent);
+
+        let mut body = Vec::new();
+
+        while !matches!(self.peek(), Token::Dedent | Token::Eof) {
+            body.push(self.parse_stmt());
+        }
+
+        self.expect(Token::Dedent);
+
+        Stmt::Func { name, params, body }
+    }
+
+    fn parse_return(&mut self) -> Stmt {
+        self.advance(); // return
+        let expr = self.parse_expr();
+        self.consume_newline();
+        Stmt::Return(expr)
+    }
+
+
 
     fn parse_if(&mut self) -> Stmt {
         self.advance(); // IF
@@ -58,8 +115,28 @@ impl Parser {
         let mut else_body = Vec::new();
 
         if matches!(self.peek(), Token::ElseIf) {
-            else_body.push(self.parse_if()); // recursive elseif
+            self.advance(); // consume ElseIf
+
+            let condition = self.parse_expr();
+            self.expect(Token::Colon);
+            self.expect(Token::Newline);
+            self.expect(Token::Indent);
+
+            let mut then_body = Vec::new();
+
+            while !matches!(self.peek(), Token::Dedent | Token::Eof) {
+                then_body.push(self.parse_stmt());
+            }
+
+            self.expect(Token::Dedent);
+
+            else_body.push(Stmt::If {
+                condition,
+                then_body,
+                else_body: Vec::new(),
+            });
         }
+
         else if matches!(self.peek(), Token::Else) {
             self.advance();
             self.expect(Token::Colon);
@@ -215,7 +292,33 @@ impl Parser {
     fn parse_primary(&mut self) -> Expr {
         match self.advance() {
             Token::Int(n) => Expr::Int(*n),
-            Token::Ident(s) => Expr::Var(s.clone()),
+            Token::Ident(name) => {
+                let name = name.clone();
+
+                if matches!(self.peek(), Token::LParen) {
+                    self.advance(); // (
+
+                    let mut args = Vec::new();
+
+                    if !matches!(self.peek(), Token::RParen) {
+                        loop {
+                            args.push(self.parse_expr());
+
+                            if matches!(self.peek(), Token::Comma) {
+                                self.advance();
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+
+                    self.expect(Token::RParen);
+
+                    Expr::Call { name, args }
+                } else {
+                    Expr::Var(name)
+                }
+            }
             Token::LParen => {
                 let expr = self.parse_expr();
                 self.expect(Token::RParen);
