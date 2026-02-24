@@ -15,7 +15,7 @@ impl SymbolTable {
             next_slot: 0,
         }
     }
-    
+
     pub fn declare(&mut self, name: &str) -> usize {
         if let Some(&slot) = self.symbols.get(name) {
             slot
@@ -65,9 +65,13 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
             for stmt in body {
                 visit_stmt(stmt, table);
             }
-        },
+        }
 
-        Stmt::If { condition, then_body, else_body } => {
+        Stmt::If {
+            condition,
+            then_body,
+            else_body,
+        } => {
             visit_expr(condition, table);
 
             for stmt in then_body {
@@ -80,7 +84,6 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
         }
 
         Stmt::Func { params, body, .. } => {
-
             // declare parameters as variables
             for p in params {
                 table.declare(p);
@@ -94,7 +97,6 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
         Stmt::Return(expr) => {
             visit_expr(expr, table);
         }
-
     }
 }
 
@@ -115,6 +117,10 @@ fn visit_expr(expr: &Expr, table: &mut SymbolTable) {
             for arg in args {
                 visit_expr(arg, table);
             }
+        }
+
+        Expr::NativeCall { arg, .. } => {
+            visit_expr(arg, table);
         }
     }
 }

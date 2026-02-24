@@ -18,7 +18,6 @@ impl CodeGen {
         }
     }
 
-
     fn emit(&mut self, byte: u8) {
         self.code.push(byte);
     }
@@ -32,7 +31,6 @@ impl CodeGen {
     }
 
     pub fn generate(mut self, program: &[Stmt], symbols: &SymbolTable) -> Vec<u8> {
-
         // compile main first, skip functions
         for stmt in program {
             if !matches!(stmt, Stmt::Func { .. }) {
@@ -65,7 +63,7 @@ impl CodeGen {
             Stmt::Assign { name, value } => {
                 self.gen_expr(value, symbols);
                 let slot = symbols.lookup(name);
-                self.emit(0x21); 
+                self.emit(0x21);
                 self.emit_u8(slot);
             }
 
@@ -78,23 +76,26 @@ impl CodeGen {
                 let loop_start = self.code.len();
 
                 self.gen_expr(condition, symbols);
-                self.emit(0x41); 
+                self.emit(0x41);
                 let jmp_out_pos = self.code.len();
-                self.emit(0); 
+                self.emit(0);
 
                 for stmt in body {
                     self.gen_stmt(stmt, symbols);
                 }
 
-                self.emit(0x40); 
+                self.emit(0x40);
                 self.emit_u8(loop_start);
 
                 let loop_end = self.code.len();
                 self.patch_u8(jmp_out_pos, loop_end);
             }
 
-            Stmt::If { condition, then_body, else_body } => {
-
+            Stmt::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
                 // 1️⃣ Evaluate condition
                 self.gen_expr(condition, symbols);
 
@@ -127,8 +128,11 @@ impl CodeGen {
                 self.patch_u8(end_jump_pos, end);
             }
 
-            Stmt::Func { name: _, params, body } => {
-
+            Stmt::Func {
+                name: _,
+                params,
+                body,
+            } => {
                 // parameters already on stack — store into memory slots
                 for (i, p) in params.iter().enumerate().rev() {
                     let slot = symbols.lookup(p);
@@ -150,7 +154,6 @@ impl CodeGen {
                 self.gen_expr(expr, symbols);
                 self.emit(0x61); // RET
             }
-
         }
     }
 
@@ -163,7 +166,7 @@ impl CodeGen {
 
             Expr::Var(name) => {
                 let slot = symbols.lookup(name);
-                self.emit(0x20); 
+                self.emit(0x20);
                 self.emit_u8(slot);
             }
 
@@ -196,6 +199,11 @@ impl CodeGen {
                 self.pending_calls.push((pos, name.clone()));
             }
 
+            Expr::NativeCall { id, arg } => {
+                self.gen_expr(arg, symbols);
+                self.emit(0x50); // CALL_NATIVE
+                self.emit_u8(*id as usize);
+            }
         }
     }
 }

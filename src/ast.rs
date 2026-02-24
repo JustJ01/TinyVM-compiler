@@ -10,15 +10,24 @@ pub enum Expr {
     Call {
         name: String,
         args: Vec<Expr>,
-    }
-
+    },
+    NativeCall {
+        id: u8,
+        arg: Box<Expr>,
+    },
 }
 
 #[derive(Debug)]
 pub enum Stmt {
     Print(Expr),
-    Assign { name: String, value: Expr },
-    While { condition: Expr, body: Vec<Stmt> },
+    Assign {
+        name: String,
+        value: Expr,
+    },
+    While {
+        condition: Expr,
+        body: Vec<Stmt>,
+    },
     If {
         condition: Expr,
         then_body: Vec<Stmt>,
@@ -31,7 +40,6 @@ pub enum Stmt {
     },
 
     Return(Expr),
-
 }
 
 #[derive(Debug)]

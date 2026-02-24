@@ -1,0 +1,7 @@
+x = 5
+result = native(1, x)
+print(result)
+
+y = 3
+result2 = native(2, y)
+print(result2)

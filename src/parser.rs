@@ -94,8 +94,6 @@ impl Parser {
         Stmt::Return(expr)
     }
 
-
-
     fn parse_if(&mut self) -> Stmt {
         self.advance(); // IF
 
@@ -135,9 +133,7 @@ impl Parser {
                 then_body,
                 else_body: Vec::new(),
             });
-        }
-
-        else if matches!(self.peek(), Token::Else) {
+        } else if matches!(self.peek(), Token::Else) {
             self.advance();
             self.expect(Token::Colon);
             self.expect(Token::Newline);
@@ -156,8 +152,6 @@ impl Parser {
             else_body,
         }
     }
-
-
 
     fn skip_newlines(&mut self) {
         while matches!(self.peek(), Token::Newline) {
@@ -204,7 +198,6 @@ impl Parser {
 
         Stmt::While { condition, body }
     }
-
 
     fn parse_expr(&mut self) -> Expr {
         self.parse_equality()
@@ -292,6 +285,21 @@ impl Parser {
     fn parse_primary(&mut self) -> Expr {
         match self.advance() {
             Token::Int(n) => Expr::Int(*n),
+            Token::Native => {
+                self.expect(Token::LParen);
+                let id = if let Token::Int(n) = self.advance() {
+                    *n as u8
+                } else {
+                    panic!("Expected native function ID");
+                };
+                self.expect(Token::Comma);
+                let arg = self.parse_expr();
+                self.expect(Token::RParen);
+                Expr::NativeCall {
+                    id,
+                    arg: Box::new(arg),
+                }
+            }
             Token::Ident(name) => {
                 let name = name.clone();
 

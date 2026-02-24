@@ -74,7 +74,6 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-
         // --- Emit pending dedents first ---
         if self.pending_dedents > 0 {
             self.pending_dedents -= 1;
@@ -120,7 +119,6 @@ impl Lexer {
         self.skip_inline_whitespace();
 
         match self.peek() {
-
             // -------- NEWLINE --------
             Some('\n') => {
                 self.advance();
@@ -139,14 +137,38 @@ impl Lexer {
             }
 
             // -------- OPERATORS --------
-            Some('+') => { self.advance(); Token::Plus }
-            Some('-') => { self.advance(); Token::Minus }
-            Some('*') => { self.advance(); Token::Star }
-            Some('/') => { self.advance(); Token::Slash }
-            Some('(') => { self.advance(); Token::LParen }
-            Some(')') => { self.advance(); Token::RParen }
-            Some(':') => { self.advance(); Token::Colon }
-            Some(',') => { self.advance(); Token::Comma}
+            Some('+') => {
+                self.advance();
+                Token::Plus
+            }
+            Some('-') => {
+                self.advance();
+                Token::Minus
+            }
+            Some('*') => {
+                self.advance();
+                Token::Star
+            }
+            Some('/') => {
+                self.advance();
+                Token::Slash
+            }
+            Some('(') => {
+                self.advance();
+                Token::LParen
+            }
+            Some(')') => {
+                self.advance();
+                Token::RParen
+            }
+            Some(':') => {
+                self.advance();
+                Token::Colon
+            }
+            Some(',') => {
+                self.advance();
+                Token::Comma
+            }
 
             Some('=') => {
                 self.advance();
@@ -196,6 +218,7 @@ impl Lexer {
                     "elseif" => Token::ElseIf,
                     "func" => Token::Func,
                     "return" => Token::Return,
+                    "native" => Token::Native,
                     _ => Token::Ident(ident),
                 }
             }

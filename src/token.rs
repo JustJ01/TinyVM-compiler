@@ -3,6 +3,7 @@ pub enum Token {
     // Keywords
     While,
     Print,
+    Native,
 
     // Identifiers and literals
     Ident(String),
