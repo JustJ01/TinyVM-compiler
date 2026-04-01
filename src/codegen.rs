@@ -154,6 +154,12 @@ impl CodeGen {
                 self.gen_expr(expr, symbols);
                 self.emit(0x61); // RET
             }
+
+            Stmt::Native { id, arg } => {
+                self.gen_expr(arg, symbols);
+                self.emit(0x50); // CALL_NATIVE
+                self.emit_u8(*id as usize);
+            }
         }
     }
 

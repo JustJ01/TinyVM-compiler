@@ -38,8 +38,11 @@ pub enum Stmt {
         params: Vec<String>,
         body: Vec<Stmt>,
     },
-
     Return(Expr),
+    Native {
+        id: u8,
+        arg: Box<Expr>,
+    },
 }
 
 #[derive(Debug)]

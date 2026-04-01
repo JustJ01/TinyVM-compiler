@@ -97,6 +97,10 @@ fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
         Stmt::Return(expr) => {
             visit_expr(expr, table);
         }
+
+        Stmt::Native { arg, .. } => {
+            visit_expr(arg, table);
+        }
     }
 }
 

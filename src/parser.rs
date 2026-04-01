@@ -37,8 +37,27 @@ impl Parser {
             Token::Ident(_) => self.parse_assign(),
             Token::Func => self.parse_func(),
             Token::Return => self.parse_return(),
+            Token::Native => self.parse_native(),
 
             _ => panic!("Unexpected token: {:?}", self.peek()),
+        }
+    }
+
+    fn parse_native(&mut self) -> Stmt {
+        self.advance(); // native
+        self.expect(Token::LParen);
+        let id = if let Token::Int(n) = self.advance() {
+            *n as u8
+        } else {
+            panic!("Expected native function ID");
+        };
+        self.expect(Token::Comma);
+        let arg = self.parse_expr();
+        self.expect(Token::RParen);
+        self.consume_newline();
+        Stmt::Native {
+            id,
+            arg: Box::new(arg),
         }
     }
 
