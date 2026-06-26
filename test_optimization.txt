@@ -1,0 +1,8 @@
+x = 2 + 3
+y = x * 1
+z = y + 0
+w = 10 - 0
+
+result = x + z
+
+print result

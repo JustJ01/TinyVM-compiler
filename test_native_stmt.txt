@@ -1,0 +1,6 @@
+native(0, 10, 20, 30)
+native(0, 40, 50)
+native(1, 7)
+native(2, 9)
+x = native(3, 1, 2, 3, 4, 5)
+print x

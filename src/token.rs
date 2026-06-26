@@ -4,10 +4,16 @@ pub enum Token {
     While,
     Print,
     Native,
+    Break,
+    Continue,
+    And,
+    Or,
+    Not,
 
     // Identifiers and literals
     Ident(String),
     Int(i32),
+    Str(String),
 
     // Operators
     Plus,
@@ -30,6 +36,8 @@ pub enum Token {
     // Delimiters
     LParen,
     RParen,
+    LBracket,
+    RBracket,
     Colon,
 
     Indent,
@@ -38,6 +46,7 @@ pub enum Token {
     Func,
     Return,
     Comma,
+    Hash,
 
     // Newlines
     Newline,

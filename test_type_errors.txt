@@ -1,0 +1,15 @@
+x = 5
+x = "hello"
+y = 5 + "hello"
+z = 5[0]
+a = [1, 2] + 5
+
+while "hello":
+    print 1
+
+if [1, 2]:
+    print 1
+
+b = [1, 2]
+c = b["x"]
+d = not "hello"

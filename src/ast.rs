@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Int(i32),
     Var(String),
@@ -7,21 +7,36 @@ pub enum Expr {
         op: BinOp,
         right: Box<Expr>,
     },
+    Unary {
+        op: UnaryOp,
+        operand: Box<Expr>,
+    },
     Call {
         name: String,
         args: Vec<Expr>,
     },
     NativeCall {
         id: u8,
-        arg: Box<Expr>,
+        args: Vec<Expr>,
+    },
+    Str(String),
+    ArrLit(Vec<Expr>),
+    ArrIndex {
+        arr: Box<Expr>,
+        index: Box<Expr>,
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
     Print(Expr),
     Assign {
         name: String,
+        value: Expr,
+    },
+    ArrAssign {
+        name: String,
+        index: Box<Expr>,
         value: Expr,
     },
     While {
@@ -41,11 +56,13 @@ pub enum Stmt {
     Return(Expr),
     Native {
         id: u8,
-        arg: Box<Expr>,
+        args: Vec<Expr>,
     },
+    Break,
+    Continue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BinOp {
     Add,
     Sub,
@@ -56,4 +73,12 @@ pub enum BinOp {
     EqEq,
     Le,
     Ge,
+    And,
+    Or,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum UnaryOp {
+    Not,
+    Neg,
 }

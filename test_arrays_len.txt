@@ -1,0 +1,9 @@
+arr = [10, 20, 30, 40, 50]
+print #arr
+print native(30, arr)
+
+arr2 = [5, 10, 15]
+print #arr2
+
+arr3 = []
+print #arr3

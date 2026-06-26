@@ -1,0 +1,14 @@
+func double(x):
+    return x * 2
+
+func add_and_double(a, b):
+    return double(a + b)
+
+func triple(x):
+    return double(x) + x
+
+result = add_and_double(5, 3)
+print result
+
+y = triple(10)
+print y

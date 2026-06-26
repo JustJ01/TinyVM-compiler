@@ -1,0 +1,8 @@
+print "abc" == "abc"
+print "abc" == "def"
+print "abc" < "def"
+print "abc" > "def"
+s = "hello"
+t = "hello"
+print s == t
+print s < t

@@ -1,0 +1,12 @@
+a = 5 + 3
+b = a * 1
+c = b + 0
+d = c - 0
+e = d * 0
+
+x = 10 + 20
+y = x * 2
+
+result = y + a
+
+print result

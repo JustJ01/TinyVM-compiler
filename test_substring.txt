@@ -1,0 +1,7 @@
+s = "hello world"
+sub = native(4, s, 0, 5)
+print sub[0]
+print sub[4]
+sub2 = native(4, s, 6, 5)
+print sub2[0]
+print sub2[4]

@@ -161,6 +161,14 @@ impl Lexer {
                 self.advance();
                 Token::RParen
             }
+            Some('[') => {
+                self.advance();
+                Token::LBracket
+            }
+            Some(']') => {
+                self.advance();
+                Token::RBracket
+            }
             Some(':') => {
                 self.advance();
                 Token::Colon
@@ -168,6 +176,11 @@ impl Lexer {
             Some(',') => {
                 self.advance();
                 Token::Comma
+            }
+
+            Some('#') => {
+                self.advance();
+                Token::Hash
             }
 
             Some('=') => {
@@ -200,6 +213,32 @@ impl Lexer {
                 }
             }
 
+            // -------- STRING LITERALS --------
+            Some('"') => {
+                self.advance(); // consume opening "
+                let mut s = String::new();
+                loop {
+                    match self.advance() {
+                        Some('"') => break,
+                        Some('\\') => {
+                            match self.advance() {
+                                Some('n') => s.push('\n'),
+                                Some('t') => s.push('\t'),
+                                Some('\\') => s.push('\\'),
+                                Some('"') => s.push('"'),
+                                Some('0') => s.push('\0'),
+                                Some('r') => s.push('\r'),
+                                Some(ch) => panic!("Invalid escape sequence: \\{}", ch),
+                                None => panic!("Unterminated string escape"),
+                            }
+                        }
+                        Some(ch) => s.push(ch),
+                        None => panic!("Unterminated string literal"),
+                    }
+                }
+                Token::Str(s)
+            }
+
             // -------- NUMBERS --------
             Some(ch) if ch.is_ascii_digit() => {
                 let value = self.read_number();
@@ -219,6 +258,11 @@ impl Lexer {
                     "func" => Token::Func,
                     "return" => Token::Return,
                     "native" => Token::Native,
+                    "break" => Token::Break,
+                    "continue" => Token::Continue,
+                    "and" => Token::And,
+                    "or" => Token::Or,
+                    "not" => Token::Not,
                     _ => Token::Ident(ident),
                 }
             }

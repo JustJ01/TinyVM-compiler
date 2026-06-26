@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{Expr, Stmt};
+use crate::liveness::LivenessAnalyzer;
 
 #[derive(Debug)]
 pub struct SymbolTable {
@@ -13,6 +14,14 @@ impl SymbolTable {
         Self {
             symbols: HashMap::new(),
             next_slot: 0,
+        }
+    }
+
+    pub fn new_with_slots(slot_assignments: HashMap<String, usize>) -> Self {
+        let max_slot = slot_assignments.values().max().copied().unwrap_or(0);
+        Self {
+            symbols: slot_assignments,
+            next_slot: max_slot + 1,
         }
     }
 
@@ -40,91 +49,14 @@ impl SymbolTable {
 }
 
 pub fn build_symbol_table(program: &[Stmt]) -> SymbolTable {
-    let mut table = SymbolTable::new();
-
-    for stmt in program {
-        visit_stmt(stmt, &mut table);
-    }
-
-    table
+    // Use liveness analysis for slot reuse
+    let mut analyzer = LivenessAnalyzer::new();
+    let slot_assignments = analyzer.analyze_and_assign_slots(program);
+    
+    let (total_vars, slots_used) = analyzer.get_slot_stats(&slot_assignments);
+    println!("  Variables: {}, Slots used: {} (saved {} slots)", 
+        total_vars, slots_used, total_vars.saturating_sub(slots_used));
+    
+    SymbolTable::new_with_slots(slot_assignments)
 }
 
-fn visit_stmt(stmt: &Stmt, table: &mut SymbolTable) {
-    match stmt {
-        Stmt::Assign { name, value } => {
-            table.declare(name);
-            visit_expr(value, table);
-        }
-
-        Stmt::Print(expr) => {
-            visit_expr(expr, table);
-        }
-
-        Stmt::While { condition, body } => {
-            visit_expr(condition, table);
-            for stmt in body {
-                visit_stmt(stmt, table);
-            }
-        }
-
-        Stmt::If {
-            condition,
-            then_body,
-            else_body,
-        } => {
-            visit_expr(condition, table);
-
-            for stmt in then_body {
-                visit_stmt(stmt, table);
-            }
-
-            for stmt in else_body {
-                visit_stmt(stmt, table);
-            }
-        }
-
-        Stmt::Func { params, body, .. } => {
-            // declare parameters as variables
-            for p in params {
-                table.declare(p);
-            }
-
-            for stmt in body {
-                visit_stmt(stmt, table);
-            }
-        }
-
-        Stmt::Return(expr) => {
-            visit_expr(expr, table);
-        }
-
-        Stmt::Native { arg, .. } => {
-            visit_expr(arg, table);
-        }
-    }
-}
-
-fn visit_expr(expr: &Expr, table: &mut SymbolTable) {
-    match expr {
-        Expr::Int(_) => {}
-
-        Expr::Var(name) => {
-            table.lookup(name);
-        }
-
-        Expr::Binary { left, right, .. } => {
-            visit_expr(left, table);
-            visit_expr(right, table);
-        }
-
-        Expr::Call { args, .. } => {
-            for arg in args {
-                visit_expr(arg, table);
-            }
-        }
-
-        Expr::NativeCall { arg, .. } => {
-            visit_expr(arg, table);
-        }
-    }
-}

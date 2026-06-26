@@ -1,0 +1,22 @@
+a = 10 + 20
+b = a * 1
+c = b + 0
+d = c - 0
+
+temp1 = 5 + 5
+temp2 = temp1 * 2
+temp3 = temp2 + 0
+
+x = 100
+y = x * 0
+
+result = a + temp2
+
+i = 0
+while i < 5:
+    i = i + 1
+    if i == 3:
+        continue
+    print i
+
+print result

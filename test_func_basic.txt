@@ -1,0 +1,17 @@
+func add(a, b):
+    return a + b
+
+func square(x):
+    return x * x
+
+func get_zero():
+    return 0
+
+x = add(10, 20)
+print x
+
+y = square(6)
+print y
+
+z = get_zero()
+print z

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BinOp, Expr, Stmt},
+    ast::{BinOp, Expr, Stmt, UnaryOp},
     token::Token,
 };
 
@@ -38,6 +38,16 @@ impl Parser {
             Token::Func => self.parse_func(),
             Token::Return => self.parse_return(),
             Token::Native => self.parse_native(),
+            Token::Break => {
+                self.advance();
+                self.consume_newline();
+                Stmt::Break
+            }
+            Token::Continue => {
+                self.advance();
+                self.consume_newline();
+                Stmt::Continue
+            }
 
             _ => panic!("Unexpected token: {:?}", self.peek()),
         }
@@ -51,13 +61,16 @@ impl Parser {
         } else {
             panic!("Expected native function ID");
         };
-        self.expect(Token::Comma);
-        let arg = self.parse_expr();
+        let mut args = Vec::new();
+        while self.peek() == &Token::Comma {
+            self.advance(); // comma
+            args.push(self.parse_expr());
+        }
         self.expect(Token::RParen);
         self.consume_newline();
         Stmt::Native {
             id,
-            arg: Box::new(arg),
+            args,
         }
     }
 
@@ -192,11 +205,24 @@ impl Parser {
             unreachable!()
         };
 
-        self.expect(Token::Assign);
-        let value = self.parse_expr();
-        self.consume_newline();
-
-        Stmt::Assign { name, value }
+        if matches!(self.peek(), Token::LBracket) {
+            self.advance();
+            let index = self.parse_expr();
+            self.expect(Token::RBracket);
+            self.expect(Token::Assign);
+            let value = self.parse_expr();
+            self.consume_newline();
+            Stmt::ArrAssign {
+                name,
+                index: Box::new(index),
+                value,
+            }
+        } else {
+            self.expect(Token::Assign);
+            let value = self.parse_expr();
+            self.consume_newline();
+            Stmt::Assign { name, value }
+        }
     }
 
     fn parse_while(&mut self) -> Stmt {
@@ -219,7 +245,39 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_equality()
+        self.parse_logical_or()
+    }
+
+    fn parse_logical_or(&mut self) -> Expr {
+        let mut expr = self.parse_logical_and();
+
+        while matches!(self.peek(), Token::Or) {
+            self.advance();
+            let right = self.parse_logical_and();
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                op: BinOp::Or,
+                right: Box::new(right),
+            };
+        }
+
+        expr
+    }
+
+    fn parse_logical_and(&mut self) -> Expr {
+        let mut expr = self.parse_equality();
+
+        while matches!(self.peek(), Token::And) {
+            self.advance();
+            let right = self.parse_equality();
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                op: BinOp::And,
+                right: Box::new(right),
+            };
+        }
+
+        expr
     }
 
     fn parse_equality(&mut self) -> Expr {
@@ -303,7 +361,43 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Expr {
         match self.advance() {
-            Token::Int(n) => Expr::Int(*n),
+            Token::Int(n) => {
+                let mut expr = Expr::Int(*n);
+                expr = self.parse_postfix(expr);
+                expr
+            }
+            Token::Str(s) => {
+                let mut expr = Expr::Str(s.clone());
+                expr = self.parse_postfix(expr);
+                expr
+            }
+            Token::Not => {
+                let operand = self.parse_primary();
+                let mut expr = Expr::Unary {
+                    op: UnaryOp::Not,
+                    operand: Box::new(operand),
+                };
+                expr = self.parse_postfix(expr);
+                expr
+            }
+            Token::Minus => {
+                let operand = self.parse_primary();
+                let mut expr = Expr::Unary {
+                    op: UnaryOp::Neg,
+                    operand: Box::new(operand),
+                };
+                expr = self.parse_postfix(expr);
+                expr
+            }
+            Token::Hash => {
+                let operand = self.parse_primary();
+                let mut expr = Expr::NativeCall {
+                    id: 30,
+                    args: vec![operand],
+                };
+                expr = self.parse_postfix(expr);
+                expr
+            }
             Token::Native => {
                 self.expect(Token::LParen);
                 let id = if let Token::Int(n) = self.advance() {
@@ -311,13 +405,18 @@ impl Parser {
                 } else {
                     panic!("Expected native function ID");
                 };
-                self.expect(Token::Comma);
-                let arg = self.parse_expr();
-                self.expect(Token::RParen);
-                Expr::NativeCall {
-                    id,
-                    arg: Box::new(arg),
+                let mut args = Vec::new();
+                while self.peek() == &Token::Comma {
+                    self.advance(); // comma
+                    args.push(self.parse_expr());
                 }
+                self.expect(Token::RParen);
+                let mut expr = Expr::NativeCall {
+                    id,
+                    args,
+                };
+                expr = self.parse_postfix(expr);
+                expr
             }
             Token::Ident(name) => {
                 let name = name.clone();
@@ -341,10 +440,31 @@ impl Parser {
 
                     self.expect(Token::RParen);
 
-                    Expr::Call { name, args }
+                    let mut expr = Expr::Call { name, args };
+                    expr = self.parse_postfix(expr);
+                    expr
                 } else {
-                    Expr::Var(name)
+                    let mut expr = Expr::Var(name);
+                    expr = self.parse_postfix(expr);
+                    expr
                 }
+            }
+            Token::LBracket => {
+                let mut elements = Vec::new();
+                if !matches!(self.peek(), Token::RBracket) {
+                    loop {
+                        elements.push(self.parse_expr());
+                        if matches!(self.peek(), Token::Comma) {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(Token::RBracket);
+                let mut expr = Expr::ArrLit(elements);
+                expr = self.parse_postfix(expr);
+                expr
             }
             Token::LParen => {
                 let expr = self.parse_expr();
@@ -353,6 +473,20 @@ impl Parser {
             }
             t => panic!("Unexpected token in expression: {:?}", t),
         }
+    }
+
+    /// Parse postfix operations like array indexing: expr[index]
+    fn parse_postfix(&mut self, mut expr: Expr) -> Expr {
+        while matches!(self.peek(), Token::LBracket) {
+            self.advance();
+            let index = self.parse_expr();
+            self.expect(Token::RBracket);
+            expr = Expr::ArrIndex {
+                arr: Box::new(expr),
+                index: Box::new(index),
+            };
+        }
+        expr
     }
 
     fn expect(&mut self, token: Token) {

@@ -1,0 +1,6 @@
+print native(3, 10, 20, 30)
+print native(0, 100, 200, 50)
+a = native(1, 5)
+print a
+b = native(2, 6)
+print b
